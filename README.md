@@ -1,4 +1,4 @@
-# RSS Keyword Telegram Bot
+# RSS Bot
 
 轻量级自托管 RSS 关键词 Telegram 推送机器人。
 
