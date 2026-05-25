@@ -57,25 +57,25 @@ Telegram 推送
 
 ## 一键安装
 
-### root 用户安装
+root 用户执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/你的用户名/rss-keyword-tgbot/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/looklenx/rssbot/main/install.sh | bash
 ```
 
-如果使用自建 Git / Forgejo，请替换为自己的 raw 地址：
+执行过程中会提示输入 Telegram Bot Token。
 
-```bash
-curl -fsSL https://git.example.com/你的用户名/rss-keyword-tgbot/raw/branch/main/install.sh | bash
+Token 会保存在服务器本地：
+
+```text
+/opt/rss-keyword-tgbot/.env
 ```
-
-安装过程中会要求输入 Telegram Bot Token。
 
 ---
 
 ## 安装目录
 
-默认目录：
+默认安装目录：
 
 ```text
 /opt/rss-keyword-tgbot
