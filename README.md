@@ -12,7 +12,7 @@
 - 添加 / 删除关键词
 - 关键词命中后推送
 - 支持推送全部 RSS 更新
-- 支持 Telegram 按钮菜单
+- 支持 Telegram 内置按钮菜单
 - 支持 SQLite 数据持久化
 - 支持已处理内容去重
 - 支持自动清理旧记录
@@ -55,6 +55,26 @@ Telegram 推送
 
 ---
 
+## Telegram Bot 准备
+
+本项目不会自动创建 Telegram Bot。
+
+使用前需要用户自行通过 BotFather 创建 Telegram Bot，并获取 Bot Token。
+
+一键安装脚本执行过程中会提示输入 Bot Token：
+
+```text
+请输入 Telegram Bot Token：
+```
+
+Token 会保存在服务器本地：
+
+```text
+/opt/rss-keyword-tgbot/.env
+```
+
+---
+
 ## 一键安装
 
 root 用户执行：
@@ -64,12 +84,6 @@ curl -fsSL https://raw.githubusercontent.com/looklenx/rssbot/main/install.sh | b
 ```
 
 执行过程中会提示输入 Telegram Bot Token。
-
-Token 会保存在服务器本地：
-
-```text
-/opt/rss-keyword-tgbot/.env
-```
 
 ---
 
@@ -227,6 +241,71 @@ docker restart rss-keyword-tgbot
 
 ---
 
+## Bot 内置按钮菜单
+
+一键安装脚本生成的 Bot 程序已内置 `/menu` 按钮面板，不需要额外配置 BotFather。
+
+发送：
+
+```text
+/menu
+```
+
+按钮内容：
+
+```text
+📊 状态        🔍 立即检查
+📡 RSS 源      🎯 关键词
+➕ 添加 RSS    ➕ 添加关键词
+✅ 关键词模式  📢 全量模式
+🧾 帮助
+```
+
+按钮说明：
+
+| 按钮 | 作用 |
+|---|---|
+| 📊 状态 | 查看当前运行状态 |
+| 🔍 立即检查 | 立即检查 RSS |
+| 📡 RSS 源 | 查看 RSS 源 |
+| 🎯 关键词 | 查看关键词 |
+| ➕ 添加 RSS | 显示添加 RSS 命令 |
+| ➕ 添加关键词 | 显示添加关键词命令 |
+| ✅ 关键词模式 | 切换为只推送关键词命中内容 |
+| 📢 全量模式 | 切换为推送全部 RSS 更新 |
+| 🧾 帮助 | 查看帮助信息 |
+
+说明：
+
+```text
+按钮菜单适合查看状态、检查 RSS、查看列表、切换模式。
+添加 RSS、添加关键词、删除 RSS、删除关键词这类需要输入参数的操作，仍建议使用命令完成。
+```
+
+---
+
+## BotFather 命令菜单，可选
+
+如果希望 Telegram 输入框旁显示命令列表，可以在 BotFather 中手动配置：
+
+```text
+start - 初始化 / 查看帮助
+menu - 打开按钮菜单
+addrss - 添加 RSS 源
+listrss - 查看 RSS 源
+delrss - 删除 RSS 源
+addkw - 添加关键词
+listkw - 查看关键词
+delkw - 删除关键词
+mode - 切换推送模式
+status - 查看当前状态
+checknow - 立即检查 RSS
+```
+
+不配置也不影响 Bot 使用。
+
+---
+
 ## 推荐初始化流程
 
 部署完成后，在 Telegram 里发送：
@@ -247,38 +326,6 @@ docker restart rss-keyword-tgbot
 https://example.com/feed.xml 是示例 RSS 地址，请替换成自己的 RSS 源。
 关键词也是示例，请按实际需求添加。
 ```
-
----
-
-## 按钮菜单
-
-发送：
-
-```text
-/menu
-```
-
-按钮内容：
-
-```text
-📊 状态        🔍 立即检查
-📡 RSS 源      🎯 关键词
-➕ 添加 RSS    ➕ 添加关键词
-✅ 关键词模式  📢 全量模式
-🧾 帮助
-```
-
-| 按钮 | 作用 |
-|---|---|
-| 📊 状态 | 查看当前运行状态 |
-| 🔍 立即检查 | 立即检查 RSS |
-| 📡 RSS 源 | 查看 RSS 源 |
-| 🎯 关键词 | 查看关键词 |
-| ➕ 添加 RSS | 显示添加 RSS 命令 |
-| ➕ 添加关键词 | 显示添加关键词命令 |
-| ✅ 关键词模式 | 只推送关键词命中内容 |
-| 📢 全量模式 | 推送全部 RSS 更新 |
-| 🧾 帮助 | 查看帮助 |
 
 ---
 
@@ -655,6 +702,22 @@ docker compose up -d --build
 /mode keyword
 /status
 /checknow
+```
+
+### BotFather 命令菜单，可选
+
+```text
+start - 初始化 / 查看帮助
+menu - 打开按钮菜单
+addrss - 添加 RSS 源
+listrss - 查看 RSS 源
+delrss - 删除 RSS 源
+addkw - 添加关键词
+listkw - 查看关键词
+delkw - 删除关键词
+mode - 切换推送模式
+status - 查看当前状态
+checknow - 立即检查 RSS
 ```
 
 ---

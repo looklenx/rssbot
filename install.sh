@@ -2,7 +2,6 @@
 set -euo pipefail
 
 APP_DIR="/opt/rss-keyword-tgbot"
-IMAGE_NAME="rss-keyword-tgbot-local"
 
 echo "======================================"
 echo " RSS Keyword Telegram Bot Installer"
@@ -14,8 +13,13 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 echo "==> 安装必要组件"
-apt-get update -y
-apt-get install -y curl ca-certificates
+if command -v apt-get >/dev/null 2>&1; then
+  apt-get update -y
+  apt-get install -y curl ca-certificates python3
+else
+  echo "当前系统未检测到 apt-get，请先手动安装 Docker、curl、python3 后再执行"
+  exit 1
+fi
 
 echo "==> 检查 Docker"
 if ! command -v docker >/dev/null 2>&1; then
@@ -76,13 +80,13 @@ import logging
 from typing import List, Tuple
 
 import feedparser
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackQueryHandler
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "120"))
 DB_PATH = os.getenv("DB_PATH", "/app/data/bot.db")
-DEFAULT_RSS = os.getenv("DEFAULT_RSS", "https://rss.nodeseek.com/")
+DEFAULT_RSS = os.getenv("DEFAULT_RSS", "https://example.com/feed.xml")
 CLEANUP_DAYS = int(os.getenv("CLEANUP_DAYS", "30"))
 
 logging.basicConfig(
@@ -265,7 +269,7 @@ def build_message(entry, matched: List[str]) -> str:
         summary = summary[:500] + "..."
 
     if not summary:
-        summary = "无摘要，请打开原帖查看。"
+        summary = "无摘要，请打开原文查看。"
 
     kw_line = ""
     if matched:
@@ -276,14 +280,14 @@ def build_message(entry, matched: List[str]) -> str:
         time_line = f"🕒 <b>时间：</b>{published}\n"
 
     return (
-        f"🚀 <b>NodeSeek 新帖命中</b>\n\n"
+        f"🚀 <b>RSS 新内容命中</b>\n\n"
         f"📌 <b>{title}</b>\n"
         f"{kw_line}"
         f"{time_line}"
         f"\n"
         f"📝 <b>内容：</b>\n"
         f"{summary}\n\n"
-        f"🔗 <b>查看原帖：</b>\n"
+        f"🔗 <b>查看原文：</b>\n"
         f"{link}"
     )
 
@@ -326,7 +330,7 @@ def help_text() -> str:
 /delrss ID
 删除 RSS 源
 
-/addkw VPS
+/addkw 关键词
 添加关键词
 
 /listkw
@@ -349,9 +353,6 @@ def help_text() -> str:
 
 /menu
 打开按钮菜单
-
-推荐 NodeSeek：
-/addrss {DEFAULT_RSS}
 """
 
 
@@ -386,7 +387,7 @@ def rss_list_text(chat_id: int) -> str:
     conn.close()
 
     if not rows:
-        return f"当前没有 RSS 源。\n\n添加 NodeSeek：\n/addrss {DEFAULT_RSS}"
+        return f"当前没有 RSS 源。\n\n添加示例：\n/addrss {DEFAULT_RSS}"
 
     return "📡 当前 RSS 源：\n\n" + "\n".join([f"{r['id']}. {r['url']}" for r in rows])
 
@@ -400,7 +401,7 @@ def kw_list_text(chat_id: int) -> str:
     conn.close()
 
     if not rows:
-        return "当前没有关键词。\n\n添加示例：\n/addkw VPS\n/addkw DMIT\n/addkw 甲骨文"
+        return "当前没有关键词。\n\n添加示例：\n/addkw 更新\n/addkw 发布\n/addkw 公告"
 
     return "🎯 当前关键词：\n\n" + "\n".join([f"{r['id']}. {r['keyword']}" for r in rows])
 
@@ -551,7 +552,7 @@ async def addkw(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ensure_user(chat_id)
 
     if not context.args:
-        await update.message.reply_text("用法：/addkw VPS")
+        await update.message.reply_text("用法：/addkw 关键词")
         return
 
     keyword = " ".join(context.args).strip()
@@ -660,7 +661,7 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "add_kw_help":
         await query.edit_message_text(
-            "添加关键词请发送：\n\n/addkw VPS\n/addkw DMIT\n/addkw 甲骨文\n/addkw 优惠\n/addkw 补货\n\n查看关键词：\n/listkw",
+            "添加关键词请发送：\n\n/addkw 更新\n/addkw 发布\n/addkw 公告\n\n查看关键词：\n/listkw",
             reply_markup=main_menu()
         )
         return
@@ -701,17 +702,6 @@ async def menu_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def post_init(app: Application):
-    await app.bot.set_my_commands([
-        BotCommand("start", "启动 / 查看帮助"),
-        BotCommand("menu", "打开按钮菜单"),
-        BotCommand("addrss", "添加 RSS 源"),
-        BotCommand("listrss", "查看 RSS 源"),
-        BotCommand("addkw", "添加关键词"),
-        BotCommand("listkw", "查看关键词"),
-        BotCommand("mode", "切换推送模式"),
-        BotCommand("status", "查看状态"),
-        BotCommand("checknow", "立即检查"),
-    ])
     app.create_task(scheduler(app))
 
 
@@ -750,7 +740,7 @@ echo "==> 创建 .env.example"
 cat > .env.example <<'EOF'
 BOT_TOKEN=your_telegram_bot_token
 CHECK_INTERVAL=120
-DEFAULT_RSS=https://rss.nodeseek.com/
+DEFAULT_RSS=https://example.com/feed.xml
 DB_PATH=/app/data/bot.db
 CLEANUP_DAYS=30
 EOF
@@ -769,7 +759,7 @@ if [ ! -f ".env" ]; then
   cat > .env <<EOF
 BOT_TOKEN=${TOKEN_VALUE}
 CHECK_INTERVAL=120
-DEFAULT_RSS=https://rss.nodeseek.com/
+DEFAULT_RSS=https://example.com/feed.xml
 DB_PATH=/app/data/bot.db
 CLEANUP_DAYS=30
 EOF
@@ -780,11 +770,7 @@ else
 fi
 
 echo "==> 检查 Python 语法"
-if command -v python3 >/dev/null 2>&1; then
-  python3 -m py_compile app.py
-else
-  echo "本机未安装 python3，跳过宿主机语法检查"
-fi
+python3 -m py_compile app.py
 
 echo "==> 构建并启动"
 docker compose up -d --build
@@ -802,7 +788,10 @@ echo "docker restart rss-keyword-tgbot"
 echo
 echo "Telegram 初始化："
 echo "/start"
-echo "/addkw 关键词"
+echo "/addrss https://example.com/feed.xml"
+echo "/addkw 更新"
+echo "/addkw 发布"
+echo "/addkw 公告"
 echo "/mode keyword"
 echo "/status"
 echo "/menu"
